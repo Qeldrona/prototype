@@ -1,7 +1,37 @@
 import Head from 'next/head'
 import styles from '../styles/Home.module.css'
+import Hello from "./api/hello";
+import getConfig, { setConfig } from 'next/config';
+import { publicRuntimeConfig } from "../next.config"
 
-export default function Home() {
+const { serverRuntimeConfig } = getConfig()
+var newPublicRuntimeConfig = {
+  // Will be available on both server and client
+  staticFolder: '/static',
+  setViaSetConfig: true
+}
+
+import {
+  useEffect,
+} from "react";
+
+
+export default function Home(props) {
+  useEffect(() => {
+    const worker = new Worker(new URL('/deep.thought.js', import.meta.url));
+    worker.postMessage({
+      question:
+        'The Answer to the Ultimate Question of Life, The Universe, and Everything.',
+    });
+    worker.onmessage = ({ data: { answer } }) => {
+      console.log(answer);
+    };
+  }, []);
+  if(typeof window !== undefined){
+    setConfig(newPublicRuntimeConfig);
+    console.log(publicRuntimeConfig)
+  }
+  console.log(props.json)
   return (
     <div className={styles.container}>
       <Head>
@@ -63,3 +93,23 @@ export default function Home() {
     </div>
   )
 }
+
+export async function getStaticProps(context) {
+  const json = await Hello.getName(context.req, context.res);
+  return {
+    props: {
+      revalidate: 0,
+      json: json
+    }, // will be passed to the page component as props
+  }
+}
+
+// export async function getStaticProps(context) {
+//   const response = await Hello;
+//   console.log(response);
+//   return {
+//     props: {
+//       revalidate: 5,
+//     }, // will be passed to the page component as props
+//   }
+// }
